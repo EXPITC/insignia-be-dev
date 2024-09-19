@@ -1,0 +1,110 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRoleEnum {
+  SUPER_ADMIN
+  ADMIN_MANAGEMENT
+  MANAGEMENT
+  GUEST
+}
+
+enum ProviderApiEnum {
+  GITHUB
+  GOOGLE
+  CHATGPT
+}
+
+model User {
+  Id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  lastActivityAt DateTime  @default(now())
+  email          String    @unique
+  emailVerified  DateTime?
+  name           String
+  password       String
+  workspaceId    String?   @db.ObjectId
+  isDeactivate   DateTime?
+
+  role      UserRoleEnum
+  Session   Session[]
+  Account   Account[]
+  ApiToken  ApiToken[]
+  Workspace Workspace?   @relation(fields: [workspaceId], references: [Id])
+}
+
+model Session {
+  Id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  createdAt DateTime @default(now())
+  expiredAt DateTime
+  token     String
+
+  User User @relation(fields: [userId], references: [Id])
+}
+
+model Account {
+  Id                String          @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String          @db.ObjectId
+  provider          ProviderApiEnum
+  providerAccountId String
+  accessToken       String
+  refreshToken      String
+  expiredAt         DateTime
+
+  User User @relation(fields: [userId], references: [Id])
+}
+
+model ApiToken {
+  Id        String          @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String          @db.ObjectId
+  provider  ProviderApiEnum
+  token     String
+  expiredAt DateTime
+  createdAt DateTime        @default(now())
+
+  User User @relation(fields: [userId], references: [Id])
+}
+
+model Workspace {
+  Id   String @id @default(auto()) @map("_id") @db.ObjectId
+  User User[]
+}
+
+model Contact {
+  Id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  workspaceId String?  @db.ObjectId
+  name        String
+  phoneNumber String
+  email       String
+  address     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  contactList ContactList[]
+}
+
+model ContactList {
+  Id             String @id @default(auto()) @map("_id") @db.ObjectId
+  contactGroupId String @db.ObjectId
+  contactId      String @db.ObjectId
+
+  contactGroup ContactGroup? @relation(fields: [contactGroupId], references: [Id])
+  contact      Contact?      @relation(fields: [contactId], references: [Id])
+}
+
+model ContactGroup {
+  Id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  description String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  contactList ContactList[]
+}
